@@ -247,7 +247,7 @@
     <header>
         <div class="logo">MX <span>OUTLET</span></div>
         <div class="nav-actions">
-            <button onclick="openLogin()">👤 Cuenta</button>
+            <button id="account-btn" onclick="openLogin()">👤 Cuenta</button>
             <button onclick="toggleCart()">🛒 Carrito (<span id="cart-count">0</span>)</button>
         </div>
     </header>
@@ -274,9 +274,8 @@
 
     <div id="login-modal" class="modal">
         <div class="modal-content">
-            <span class="close-modal" onclick="closeLogin()">&times;</span>
-            <h2>Ingresar</h2>
-            <p style="margin-bottom: 1rem; color: var(--text-secondary);">Ingresa tu correo para recibir los códigos.</p>
+            <h2>Bienvenido a MX OUTLET</h2>
+            <p style="margin-bottom: 1rem; color: var(--text-secondary);">Inicia sesión o regístrate con tu correo y contraseña para ver las ofertas.</p>
             <form id="login-form" onsubmit="handleLogin(event)">
                 <div class="form-group">
                     <label>Correo Electrónico</label>
@@ -284,9 +283,9 @@
                 </div>
                 <div class="form-group">
                     <label>Contraseña</label>
-                    <input type="password" placeholder="********">
+                    <input type="password" id="password" required placeholder="********" minlength="6">
                 </div>
-                <button type="submit" class="btn-primary">Continuar</button>
+                <button type="submit" class="btn-primary">Entrar / Registrarse</button>
             </form>
         </div>
     </div>
@@ -324,7 +323,6 @@
 
     <script>
         // --- DATA ---
-        // Precios: 500 saldo = 100 costo
         const products = [
             { id: 1, bank: "Banamex", value: 500, price: 100, style: "banamex" },
             { id: 2, bank: "Banamex", value: 1000, price: 200, style: "banamex" },
@@ -436,17 +434,14 @@
 
             const totalAmount = document.getElementById('cart-total-amount').innerText;
             
-            // Configurar datos del modal de pago
             document.getElementById('final-total').innerText = totalAmount;
             
-            // Link de WhatsApp dinámico
             const waNumber = "12296558023";
             const message = `Hola, quiero confirmar mi pedido de Gift Cards.\nMi correo es: ${userEmail}\nMonto a pagar: $${totalAmount} MXN.\nAdjunto mi comprobante de pago a la cuenta NVIO terminación 9364.`;
             const waLink = `https://wa.me/${waNumber}?text=${encodeURIComponent(message)}`;
             
             document.getElementById('whatsapp-link').href = waLink;
 
-            // Cambiar modales
             document.getElementById('cart-modal').style.display = 'none';
             document.getElementById('payment-modal').style.display = 'flex';
         }
@@ -462,18 +457,50 @@
             });
         }
 
-        // --- LOGIN / REGISTER ---
-        function openLogin() { document.getElementById('login-modal').style.display = 'flex'; }
-        function closeLogin() { document.getElementById('login-modal').style.display = 'none'; }
+        // --- LOGIN / REGISTER LOGIC ---
+        function openLogin() { 
+            document.getElementById('login-modal').style.display = 'flex'; 
+            document.body.style.overflow = 'hidden'; // Bloquea el scroll
+        }
+        
+        function closeLogin() { 
+            document.getElementById('login-modal').style.display = 'none'; 
+            document.body.style.overflow = 'auto'; // Restaura el scroll
+        }
 
         function handleLogin(e) {
             e.preventDefault();
             const email = document.getElementById('email').value;
+            const password = document.getElementById('password').value; 
+            
             userEmail = email;
             localStorage.setItem('mx_user', email); 
             showNotification(`Conectado como ${email}`);
+            
             closeLogin();
+            updateAccountButton(); // Cambia el botón a "Cerrar Sesión"
+            
             if(cart.length > 0) toggleCart();
+        }
+
+        function logout() {
+            localStorage.removeItem('mx_user');
+            userEmail = null;
+            showNotification('Sesión cerrada');
+            
+            const btn = document.getElementById('account-btn');
+            btn.innerText = '👤 Cuenta';
+            btn.setAttribute('onclick', 'openLogin()');
+            
+            openLogin(); // Vuelve a pedir login
+        }
+
+        function updateAccountButton() {
+            if (userEmail) {
+                const btn = document.getElementById('account-btn');
+                btn.innerText = 'Cerrar Sesión';
+                btn.setAttribute('onclick', 'logout()');
+            }
         }
 
         function showNotification(msg) {
@@ -483,8 +510,17 @@
             setTimeout(() => { notif.style.display = 'none'; }, 3000);
         }
 
-        // Init
-        updateCartCount();
+        // --- INITIALIZATION ---
+        window.onload = function() {
+            updateCartCount();
+            
+            // Fuerza el login si no hay sesión activa
+            if (!userEmail) {
+                openLogin();
+            } else {
+                updateAccountButton();
+            }
+        };
     </script>
 </body>
 </html>
